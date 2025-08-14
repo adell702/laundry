@@ -1,0 +1,22 @@
+# Dependencies
+vendor/
+
+# Environment variables
+.env
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# OS generated files
+Thumbs.db
