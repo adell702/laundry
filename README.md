@@ -38,7 +38,18 @@ Buka: http://127.0.0.1:8000
 
 ## Menjalankan dengan Docker Compose
 
-Siapkan **Docker Engine atau Docker Desktop** yang sedang berjalan, **Docker Compose v2+**, dan **OpenSSL**. Jalankan dari direktori proyek; PHP, Composer, Node.js, dan npm tidak perlu dipasang di host.
+Siapkan **Docker Engine atau Docker Desktop** yang sedang berjalan dan **Docker Compose v2+**. Pada Windows, gunakan Docker Desktop dalam mode Linux containers. Jalankan dari direktori proyek; PHP, Composer, Node.js, dan npm tidak perlu dipasang di host.
+
+**Windows PowerShell 5.1+** (tanpa OpenSSL atau Git Bash):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\docker\setup.ps1
+docker compose --env-file .env.docker up -d --build --wait
+```
+
+Opsi `ExecutionPolicy` di atas hanya berlaku pada proses setup tersebut.
+
+**macOS/Linux** (memerlukan OpenSSL):
 
 ```bash
 ./docker/setup.sh
@@ -47,7 +58,9 @@ docker compose --env-file .env.docker up -d --build --wait
 
 Buka **http://localhost:8080**. Build pertama mengunduh image, memasang dependensi, dan membangun aset frontend sehingga membutuhkan koneksi internet.
 
-Script setup membuat `.env.docker` dengan `APP_KEY` dan password database acak. File ini diabaikan Git; simpan kredensialnya dan jangan dibagikan. Menjalankan setup kembali mempertahankan file yang sudah ada. Konfigurasi `.env` dan database SQLite lokal tidak diubah. Selalu gunakan `--env-file .env.docker` pada perintah Compose agar konfigurasi Docker yang digunakan.
+Script setup membuat `.env.docker` dengan `APP_KEY` dan password database acak. File ini diabaikan Git; simpan kredensialnya dan jangan dibagikan. Menjalankan setup kembali hanya mengisi kredensial yang kosong atau belum ada, sambil mempertahankan kredensial dan pengaturan yang sudah terisi. Konfigurasi `.env` dan database SQLite lokal tidak diubah. Selalu gunakan `--env-file .env.docker` pada perintah Compose agar konfigurasi Docker yang digunakan.
+
+Jika muncul error `DB_PASSWORD` atau `MYSQL_ROOT_PASSWORD` kosong, jalankan script setup sesuai sistem operasi, lalu gunakan perintah Compose lengkap di atas. `docker compose up -d` saja membaca `.env` bawaan untuk interpolasi; `env_file` pada service tidak memasok nilai untuk `${...}` dalam `compose.yaml`.
 
 Stack berisi:
 

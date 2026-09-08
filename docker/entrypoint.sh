@@ -2,7 +2,7 @@
 set -eu
 
 if [ -z "${APP_KEY:-}" ]; then
-    echo "APP_KEY is missing. Run ./docker/setup.sh and use --env-file .env.docker." >&2
+    echo "APP_KEY is missing. Run docker/setup.sh or docker/setup.ps1 and use --env-file .env.docker." >&2
     exit 1
 fi
 

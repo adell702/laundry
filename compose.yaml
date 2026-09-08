@@ -30,8 +30,8 @@ services:
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-laundry}
       MYSQL_USER: ${DB_USERNAME:-laundry}
-      MYSQL_PASSWORD: ${DB_PASSWORD:?Run ./docker/setup.sh first}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Run ./docker/setup.sh first}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Run docker/setup.sh or docker/setup.ps1, then use --env-file .env.docker}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Run docker/setup.sh or docker/setup.ps1, then use --env-file .env.docker}
     volumes:
       - mysql-data:/var/lib/mysql
     networks:
