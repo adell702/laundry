@@ -1,0 +1,123 @@
+name: laundry
+
+x-app: &app
+  image: laundry-app:local
+  build:
+    context: .
+    target: app
+    args:
+      VITE_APP_NAME: ${APP_NAME:-AA Laundry}
+  env_file:
+    - .env.docker
+  environment:
+    DB_CONNECTION: mysql
+    DB_HOST: db
+    DB_PORT: 3306
+    SESSION_DRIVER: database
+    CACHE_STORE: database
+    QUEUE_CONNECTION: database
+    LOG_CHANNEL: stderr
+  volumes:
+    - app-storage:/var/www/html/storage
+  networks:
+    - laundry
+  restart: unless-stopped
+  init: true
+
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-laundry}
+      MYSQL_USER: ${DB_USERNAME:-laundry}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Run ./docker/setup.sh first}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Run ./docker/setup.sh first}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - laundry
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - MYSQL_PWD="$${MYSQL_PASSWORD}" mysql --protocol=TCP -h 127.0.0.1 -u "$${MYSQL_USER}" "$${MYSQL_DATABASE}" -e 'SELECT 1' >/dev/null 2>&1
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  migrate:
+    <<: *app
+    command: ["php", "artisan", "migrate", "--force", "--no-interaction"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    <<: *app
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - SCRIPT_NAME=/ping SCRIPT_FILENAME=/ping REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 | grep -q pong
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    image: laundry-web:local
+    build:
+      context: .
+      target: web
+      args:
+        VITE_APP_NAME: ${APP_NAME:-AA Laundry}
+    ports:
+      - "${HTTP_BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:80"
+    volumes:
+      - app-storage:/var/www/html/storage:ro
+    networks:
+      - laundry
+    depends_on:
+      app:
+        condition: service_healthy
+        restart: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  queue:
+    <<: *app
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=60", "--max-time=3600", "--no-interaction"]
+    stop_grace_period: 90s
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work", "--no-interaction"]
+    stop_grace_period: 90s
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+networks:
+  laundry:
+
+volumes:
+  mysql-data:
+  app-storage:
