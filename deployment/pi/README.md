@@ -67,12 +67,20 @@ created by adding these files to the repository.
   wait for health checks, and verify app/web/queue/scheduler are running.
   Migrations must succeed before application services start. No seeder runs.
 
-Jenkins occupies port 8080; Laundry uses **127.0.0.1:8088** by default. Access it
-locally on the Pi or use `ssh -L 8088:127.0.0.1:8088 pi-cloudflare` and browse
-http://localhost:8088. A public domain/tunnel is a separate setup: configure
-Laravel's trusted reverse proxy for HTTPS, set `APP_URL` and secure cookies,
-and point the tunnel at `http://127.0.0.1:8088`. Tripay callbacks require a
-reachable public URL. No DNS or tunnel configuration is changed by this pipeline.
+Jenkins occupies port 8080; Laundry uses **127.0.0.1:8088**. Configure the
+Cloudflare tunnel route **laundry.bits.my.id → http://localhost:8088**. The
+production environment uses `APP_URL=https://laundry.bits.my.id` and secure
+session cookies, so use the HTTPS domain for login. Plain HTTP on the Pi is
+available for health checks, but browsers will not send secure session cookies
+over HTTP.
+
+`TRUSTED_PROXIES=172.16.0.0/12` covers the Pi's Docker bridge gateways. Laravel
+accepts `X-Forwarded-Proto` from these addresses so redirects and forms preserve
+HTTPS after Cloudflare terminates TLS. Forwarded host and client-IP headers
+remain untrusted. If Docker uses another subnet, set `TRUSTED_PROXIES` to the
+actual gateway IP or CIDR (comma-separated for multiple entries). The default
+outside production trusts no proxy. No DNS or tunnel configuration is changed
+by the pipeline. Tripay callbacks require the public route to be reachable.
 
 The database stays in the existing shared MariaDB stack; application files use
 the persistent `laundry_app-storage` volume. Keep this volume and `APP_KEY` across
