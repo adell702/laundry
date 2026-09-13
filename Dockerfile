@@ -46,6 +46,19 @@ ARG VITE_APP_NAME="AA Laundry"
 ENV VITE_APP_NAME=$VITE_APP_NAME
 RUN npm run build
 
+FROM dependencies AS ci
+
+RUN --mount=type=cache,target=/root/.composer/cache \
+    COMPOSER_ALLOW_SUPERUSER=1 composer install \
+        --no-interaction --prefer-dist --no-progress \
+    && composer check-platform-reqs
+
+COPY --from=assets /app/public/build ./public/build
+
+# Jenkins copies tests into a disposable container. They remain excluded from
+# the production build context by .dockerignore.
+ENV APP_ENV=testing
+
 FROM php-base AS app
 
 COPY --from=dependencies /var/www/html /var/www/html

@@ -1,0 +1,102 @@
+# Jenkins deploys through the Pi's Docker socket, as in the other Pi projects.
+# MariaDB is provisioned separately on the existing shared-services network.
+name: laundry
+
+x-app: &app
+  image: laundry-app:${LAUNDRY_IMAGE_TAG:?Use the image tag produced by Jenkins}
+  env_file: .env.production
+  environment:
+    APP_ENV: production
+    APP_DEBUG: "false"
+    APP_KEY: ${APP_KEY:?Set APP_KEY in laundry-production-env}
+    APP_URL: ${APP_URL:?Set APP_URL in laundry-production-env}
+    DB_CONNECTION: mysql
+    DB_HOST: ${DB_HOST:?Use mariadb on shared-services}
+    DB_PORT: ${DB_PORT:-3306}
+    DB_DATABASE: ${DB_DATABASE:?Provision the laundry database first}
+    DB_USERNAME: ${DB_USERNAME:?Provision the laundry database user first}
+    DB_PASSWORD: ${DB_PASSWORD:?Set the laundry database password}
+    SESSION_DRIVER: database
+    CACHE_STORE: database
+    QUEUE_CONNECTION: database
+    LOG_CHANNEL: stderr
+  volumes:
+    - app-storage:/var/www/html/storage
+  networks:
+    - default
+    - shared-services
+  restart: unless-stopped
+  init: true
+  logging:
+    driver: json-file
+    options:
+      max-size: "5m"
+      max-file: "3"
+
+services:
+  migrate:
+    <<: *app
+    command: ["php", "artisan", "migrate", "--force", "--no-interaction"]
+    restart: "no"
+
+  app:
+    <<: *app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - SCRIPT_NAME=/ping SCRIPT_FILENAME=/ping REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 | grep -q pong
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  web:
+    image: laundry-web:${LAUNDRY_IMAGE_TAG:?Use the image tag produced by Jenkins}
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-8088}:80"
+    volumes:
+      - app-storage:/var/www/html/storage:ro
+    depends_on:
+      app:
+        condition: service_healthy
+        restart: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  queue:
+    <<: *app
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=60", "--max-time=3600", "--no-interaction"]
+    stop_grace_period: 90s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work", "--no-interaction"]
+    stop_grace_period: 90s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  app-storage:
+    name: laundry_app-storage
+
+networks:
+  shared-services:
+    external: true
+    name: shared-services

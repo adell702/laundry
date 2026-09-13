@@ -3,6 +3,8 @@
 .env
 .env.backup
 .env.production
+/.docker-ci
+/test-results
 .env.docker
 .env.docker.*
 !.env.docker.example

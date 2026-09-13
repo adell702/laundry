@@ -149,6 +149,17 @@ docker compose --env-file .env.docker down -v
 
 Konfigurasi bawaan ditujukan untuk penggunaan lokal. Untuk produksi, siapkan domain dan TLS/HTTPS pada reverse proxy, set `APP_URL` ke URL HTTPS, `APP_ENV=production`, `APP_DEBUG=false`, dan `SESSION_SECURE_COOKIE=true`. Gunakan kredensial yang sesuai, pertahankan `APP_KEY`, atur backup database serta storage, dan jangan gunakan akun/password demo; hindari seeder demo atau ubah akun tersebut sebelum aplikasi dapat diakses publik.
 
+## CI/CD Jenkins (Raspberry Pi)
+
+Pipeline pada [`Jenkinsfile`](Jenkinsfile) membangun image, menjalankan PHPUnit,
+dan men-deploy build `main` yang berhasil ke Raspberry Pi melalui Docker Compose.
+Konfigurasi produksi memakai MariaDB pada jaringan `shared-services`, secret file
+Jenkins `laundry-production-env`, dan port `127.0.0.1:8088`.
+
+Lihat [panduan setup Jenkins di Pi](deployment/pi/README.md) untuk menyiapkan
+database, credential, dan job. Nonaktifkan parameter `DEPLOY` untuk build/test
+saja. Konfigurasi Docker lokal tetap menggunakan `compose.yaml`.
+
 ## Akun demo
 
 | Role  | Email                   | Password  |
