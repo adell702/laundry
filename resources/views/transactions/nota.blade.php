@@ -41,10 +41,10 @@
     <table>
         @foreach($transaction->items as $item)
             <tr>
-                <td colspan="2" class="bold">{{ $item->service?->name }}</td>
+                <td colspan="2" class="bold">{{ $item->service_name ?? $item->service?->name }}</td>
             </tr>
             <tr>
-                <td>{{ $item->quantity }} {{ $item->service?->unit }} x {{ number_format($item->unit_price, 0, ',', '.') }}</td>
+                <td>{{ $item->quantity }} {{ $item->service_unit ?? $item->service?->unit }} x {{ number_format($item->unit_price, 0, ',', '.') }}</td>
                 <td class="r">{{ number_format($item->subtotal, 0, ',', '.') }}</td>
             </tr>
         @endforeach

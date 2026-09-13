@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'tripay' => [
+        'enabled' => (bool) env('TRIPAY_ENABLED', false),
+        'mode' => env('TRIPAY_MODE', 'sandbox'),
+        'api_key' => env('TRIPAY_API_KEY'),
+        'private_key' => env('TRIPAY_PRIVATE_KEY'),
+        'merchant_code' => env('TRIPAY_MERCHANT_CODE'),
+        'callback_url' => env('TRIPAY_CALLBACK_URL'),
+        'expiry_minutes' => (int) env('TRIPAY_EXPIRY_MINUTES', 60),
+        'timeout' => (int) env('TRIPAY_TIMEOUT', 15),
+    ],
+
 ];

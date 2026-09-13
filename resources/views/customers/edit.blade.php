@@ -7,6 +7,7 @@
             @csrf @method('PUT')
             <x-input name="name" label="Nama" :value="$customer->name" required />
             <x-input name="phone" label="No. WhatsApp / Telepon" :value="$customer->phone" required />
+            <x-input name="email" label="Email (untuk pembayaran online)" type="email" :value="$customer->email" />
             <x-input name="address" label="Alamat" :value="$customer->address" />
             <x-textarea name="notes" label="Catatan" :value="$customer->notes" />
             <div class="flex gap-2 pt-2">

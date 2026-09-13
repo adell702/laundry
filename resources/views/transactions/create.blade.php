@@ -14,9 +14,10 @@
                         <option value="{{ $c->id }}" @selected(old('customer_id')==$c->id)>{{ $c->name }} ({{ $c->phone }})</option>
                     @endforeach
                 </x-select>
-                <div id="new-customer" class="grid sm:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div id="new-customer" class="grid sm:grid-cols-2 gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <x-input name="new_customer_name" label="Nama baru" />
                     <x-input name="new_customer_phone" label="No. WA baru" />
+                    <x-input name="new_customer_email" label="Email (opsional)" type="email" />
                     <x-input name="new_customer_address" label="Alamat" />
                 </div>
             </div>
@@ -79,6 +80,12 @@ function formatRp(n) {
     return new Intl.NumberFormat('id-ID').format(Math.round(n));
 }
 
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    })[character]);
+}
+
 function recalc() {
     let total = 0;
     itemsEl.querySelectorAll('.item-row').forEach(row => {
@@ -95,7 +102,7 @@ function recalc() {
 function addItem(prefill = {}) {
     const idx = itemsEl.children.length;
     const opts = services.map(s =>
-        `<option value="${s.id}" data-price="${s.price}" ${prefill.service_id==s.id?'selected':''}>${s.name} — Rp ${formatRp(s.price)}/${s.unit}</option>`
+        `<option value="${s.id}" data-price="${s.price}" ${prefill.service_id==s.id?'selected':''}>${escapeHtml(s.name)} — Rp ${formatRp(s.price)}/${escapeHtml(s.unit)}</option>`
     ).join('');
     const div = document.createElement('div');
     div.className = 'item-row grid grid-cols-12 gap-2 items-end bg-slate-50 p-3 rounded-lg border border-slate-200';

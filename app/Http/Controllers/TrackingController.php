@@ -20,7 +20,7 @@ class TrackingController extends Controller
             'phone' => ['required', 'string'],
         ]);
 
-        $transaction = Transaction::with(['customer', 'items.service'])
+        $transaction = Transaction::with(['customer', 'items.service', 'latestTripayPayment'])
             ->where('invoice_code', $request->invoice_code)
             ->whereHas('customer', fn ($q) => $q->where('phone', $request->phone))
             ->first();

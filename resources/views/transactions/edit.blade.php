@@ -57,9 +57,12 @@ $servicesJson = $services->map(fn($s) => [
     'name' => $s->name,
     'unit' => $s->unit,
     'price' => (float) $s->price,
+    'is_active' => $s->is_active,
 ])->values();
 $existing = $transaction->items->map(fn($i) => [
     'service_id' => $i->service_id,
+    'service_name' => $i->service_name ?? $i->service?->name,
+    'service_unit' => $i->service_unit ?? $i->service?->unit,
     'quantity' => (float) $i->quantity,
 ]);
 @endphp
@@ -72,6 +75,11 @@ const itemsEl = document.getElementById('items');
 
 function formatRp(n) {
     return new Intl.NumberFormat('id-ID').format(Math.round(n));
+}
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    })[character]);
 }
 function recalc() {
     let total = 0;
@@ -87,14 +95,18 @@ function recalc() {
 }
 function addItem(prefill = {}) {
     const idx = itemsEl.children.length;
+    const missingService = prefill.service_name && !services.some(s => s.id == prefill.service_id);
+    const missingOption = missingService
+        ? `<option value="" selected disabled>${escapeHtml(prefill.service_name)} — layanan dihapus, pilih pengganti</option>`
+        : '';
     const opts = services.map(s =>
-        `<option value="${s.id}" ${prefill.service_id==s.id?'selected':''}>${s.name} — Rp ${formatRp(s.price)}/${s.unit}</option>`
+        `<option value="${s.id}" ${prefill.service_id==s.id?'selected':''}>${escapeHtml(s.name)}${s.is_active ? '' : ' (nonaktif)'} — Rp ${formatRp(s.price)}/${escapeHtml(s.unit)}</option>`
     ).join('');
     const div = document.createElement('div');
     div.className = 'item-row grid grid-cols-12 gap-2 items-end bg-slate-50 p-3 rounded-lg border border-slate-200';
     div.innerHTML = `
         <div class="col-span-12 sm:col-span-6">
-            <select name="items[${idx}][service_id]" class="svc w-full rounded-lg border-slate-300 text-sm" required>${opts}</select>
+            <select name="items[${idx}][service_id]" class="svc w-full rounded-lg border-slate-300 text-sm" required>${missingOption}${opts}</select>
         </div>
         <div class="col-span-6 sm:col-span-3">
             <input type="number" step="0.1" min="0.1" name="items[${idx}][quantity]" value="${prefill.quantity||1}" class="qty w-full rounded-lg border-slate-300 text-sm" required>

@@ -35,6 +35,7 @@ class CustomerController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:20', 'unique:customers,phone'],
+            'email' => ['nullable', 'email:rfc', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
         ]);
@@ -63,6 +64,7 @@ class CustomerController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:20', 'unique:customers,phone,'.$customer->id],
+            'email' => ['nullable', 'email:rfc', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
         ]);
@@ -76,6 +78,12 @@ class CustomerController extends Controller
 
     public function destroy(Customer $customer): RedirectResponse
     {
+        if ($customer->transactions()->exists()) {
+            return back()->withErrors([
+                'error' => 'Pelanggan dengan riwayat transaksi tidak dapat dihapus.',
+            ]);
+        }
+
         $name = $customer->name;
         $customer->delete();
 

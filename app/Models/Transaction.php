@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 #[Fillable([
@@ -64,6 +65,27 @@ class Transaction extends Model
     public function items(): HasMany
     {
         return $this->hasMany(TransactionItem::class);
+    }
+
+    public function tripayPayments(): HasMany
+    {
+        return $this->hasMany(TripayPayment::class);
+    }
+
+    public function latestTripayPayment(): HasOne
+    {
+        return $this->hasOne(TripayPayment::class)->latestOfMany();
+    }
+
+    public function hasLockedTripayPayment(): bool
+    {
+        $payments = $this->relationLoaded('tripayPayments')
+            ? $this->tripayPayments
+            : $this->tripayPayments()->get(['id', 'transaction_id', 'status']);
+
+        return $payments->contains(
+            fn (TripayPayment $payment): bool => $payment->isPending() || $payment->status === 'PAID'
+        );
     }
 
     public function recalculateTotal(): void

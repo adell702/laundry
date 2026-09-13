@@ -14,8 +14,8 @@ class DashboardController extends Controller
         $today = now()->toDateString();
 
         $todayIncome = Transaction::query()
-            ->whereDate('created_at', $today)
             ->where('payment_status', 'lunas')
+            ->whereDate('paid_at', $today)
             ->sum('total');
 
         $todayTransactions = Transaction::query()
@@ -41,8 +41,8 @@ class DashboardController extends Controller
 
         $monthlyIncome = Transaction::query()
             ->where('payment_status', 'lunas')
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
+            ->whereMonth('paid_at', now()->month)
+            ->whereYear('paid_at', now()->year)
             ->sum('total');
 
         $customerCount = Customer::count();

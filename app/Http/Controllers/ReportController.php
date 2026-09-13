@@ -14,8 +14,9 @@ class ReportController extends Controller
 {
     public function index(Request $request): View
     {
-        $dateFrom = $request->date_from ?? now()->startOfMonth()->toDateString();
-        $dateTo = $request->date_to ?? now()->toDateString();
+        $filters = $this->validatedDates($request);
+        $dateFrom = $filters['date_from'] ?? now()->startOfMonth()->toDateString();
+        $dateTo = $filters['date_to'] ?? now()->toDateString();
 
         $transactions = Transaction::with(['customer', 'user'])
             ->whereDate('created_at', '>=', $dateFrom)
@@ -23,7 +24,11 @@ class ReportController extends Controller
             ->latest()
             ->get();
 
-        $income = $transactions->where('payment_status', 'lunas')->sum('total');
+        $income = Transaction::query()
+            ->where('payment_status', 'lunas')
+            ->whereDate('paid_at', '>=', $dateFrom)
+            ->whereDate('paid_at', '<=', $dateTo)
+            ->sum('total');
         $unpaid = $transactions->where('payment_status', 'belum_lunas')->sum('total');
         $count = $transactions->count();
 
@@ -48,11 +53,21 @@ class ReportController extends Controller
 
     public function export(Request $request): BinaryFileResponse
     {
-        $dateFrom = $request->date_from ?? now()->startOfMonth()->toDateString();
-        $dateTo = $request->date_to ?? now()->toDateString();
+        $filters = $this->validatedDates($request);
+        $dateFrom = $filters['date_from'] ?? now()->startOfMonth()->toDateString();
+        $dateTo = $filters['date_to'] ?? now()->toDateString();
 
         $filename = "laporan-transaksi-{$dateFrom}-{$dateTo}.xlsx";
 
         return Excel::download(new TransactionsExport($dateFrom, $dateTo), $filename);
+    }
+
+    /** @return array{date_from?: string, date_to?: string} */
+    private function validatedDates(Request $request): array
+    {
+        return $request->validate([
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+        ]);
     }
 }

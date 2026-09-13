@@ -7,6 +7,7 @@
             @csrf
             <x-input name="name" label="Nama" required />
             <x-input name="phone" label="No. WhatsApp / Telepon" required />
+            <x-input name="email" label="Email (untuk pembayaran online)" type="email" />
             <x-input name="address" label="Alamat" />
             <x-textarea name="notes" label="Catatan" />
             <div class="flex gap-2 pt-2">

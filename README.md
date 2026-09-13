@@ -9,6 +9,7 @@ Stack: **Laravel 13 + Breeze + MySQL/SQLite + Tailwind + Maatwebsite Excel**.
 - CRUD pelanggan, layanan, transaksi, pengeluaran, karyawan
 - Status pengerjaan: diterima → dicuci → disetrika → selesai → diambil
 - Status bayar manual: belum lunas / lunas (tunai, transfer, QRIS)
+- Pembayaran online **Tripay sandbox** dengan channel aktif merchant, checkout, sinkronisasi status, dan callback bertanda tangan
 - Cetak nota + link kirim e-nota via WhatsApp
 - Dashboard real-time (pemasukan, pending, progress)
 - Laporan periodik + **export Excel (.xlsx)**
@@ -19,7 +20,7 @@ Stack: **Laravel 13 + Breeze + MySQL/SQLite + Tailwind + Maatwebsite Excel**.
 
 - Web only (browser desktop/mobile)
 - Internal admin + kasir
-- Pembayaran manual (tanpa payment gateway)
+- Tripay berjalan dalam mode sandbox sampai kredensial production sengaja dikonfigurasi
 - Tracking status di sistem (bukan notifikasi push otomatis)
 
 ## Instalasi
@@ -91,8 +92,26 @@ Ubah konfigurasi Docker di `.env.docker`:
 
 - `HTTP_PORT`: port host; jika diubah, sesuaikan juga `APP_URL`, misalnya `HTTP_PORT=8081` dan `APP_URL=http://localhost:8081`.
 - `HTTP_BIND_ADDRESS=127.0.0.1`: akses hanya dari komputer lokal. Gunakan alamat bind lain jika akses jaringan memang diperlukan.
+- `APP_TIMEZONE=Asia/Jakarta`: zona waktu transaksi, dashboard, dan laporan.
 - `APP_NAME`: nama aplikasi, termasuk nama yang digunakan saat build aset.
 - `MAIL_MAILER=log`: email ditulis ke log, bukan dikirim. Isi konfigurasi SMTP untuk pengiriman email sungguhan.
+
+### Tripay sandbox
+
+Dapatkan API Key, Private Key, dan Merchant Code sandbox dari member area Tripay pada **API & Integrasi → Simulator → Merchant → Detail**, lalu isi `.env.docker`:
+
+```env
+TRIPAY_ENABLED=true
+TRIPAY_MODE=sandbox
+TRIPAY_API_KEY=api_key_sandbox_anda
+TRIPAY_PRIVATE_KEY=private_key_sandbox_anda
+TRIPAY_MERCHANT_CODE=kode_merchant_sandbox_anda
+TRIPAY_CALLBACK_URL=https://domain-publik-anda.example/api/payments/callback
+```
+
+Aktifkan channel sandbox pada menu Simulator Tripay, lalu rebuild container. `TRIPAY_CALLBACK_URL` boleh dikosongkan jika `APP_URL` sudah berupa URL publik; aplikasi otomatis memakai `${APP_URL}/api/payments/callback`. Tripay tidak dapat memanggil `localhost`, sehingga pengujian callback dari Docker lokal memerlukan URL HTTPS publik atau tunnel yang diarahkan ke `http://localhost:8080`.
+
+Pembayaran dibuat dari halaman detail transaksi yang belum lunas. Aplikasi memakai closed payment, memvalidasi callback `X-Callback-Signature`, mencocokkan referensi dan nominal, serta menyediakan tombol sinkronisasi status sebagai jalur pemulihan. Lihat [dokumentasi resmi Tripay](https://tripay.co.id/developer) untuk Simulator dan Callback Tester.
 
 Setelah mengubah source code atau konfigurasi, terapkan kembali dengan build berikut. Source code disalin ke image sehingga perubahan di host memerlukan rebuild:
 

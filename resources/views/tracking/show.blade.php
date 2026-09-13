@@ -49,6 +49,22 @@
                         <div class="flex justify-between"><span class="text-slate-500">Estimasi</span><span>{{ $transaction->estimated_ready_at->format('d/m/Y H:i') }}</span></div>
                     @endif
                 </div>
+
+                <div class="border-t pt-4 text-sm">
+                    <div class="font-medium text-slate-700 mb-2">Layanan</div>
+                    @foreach($transaction->items as $item)
+                        <div class="flex justify-between gap-3 text-slate-600">
+                            <span>{{ $item->service_name ?? $item->service?->name }}</span>
+                            <span>{{ $item->quantity }} {{ $item->service_unit ?? $item->service?->unit }}</span>
+                        </div>
+                    @endforeach
+                </div>
+
+                @if($transaction->payment_status === 'belum_lunas' && $transaction->latestTripayPayment?->isPayable() && $transaction->latestTripayPayment->safeCheckoutUrl())
+                    <a href="{{ $transaction->latestTripayPayment->safeCheckoutUrl() }}" class="block w-full rounded-lg bg-sky-700 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-sky-800">
+                        Bayar Sekarang
+                    </a>
+                @endif
             </div>
         @endif
 

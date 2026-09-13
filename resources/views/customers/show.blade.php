@@ -7,6 +7,9 @@
             <div>
                 <h2 class="text-xl font-bold">{{ $customer->name }}</h2>
                 <p class="text-slate-500 mt-1">{{ $customer->phone }}</p>
+                @if($customer->email)
+                    <p class="text-sm text-slate-500 mt-1">{{ $customer->email }}</p>
+                @endif
                 <p class="text-sm text-slate-400 mt-1">{{ $customer->address ?? 'Alamat belum diisi' }}</p>
                 @if($customer->notes)
                     <p class="text-sm mt-3 text-slate-600">{{ $customer->notes }}</p>

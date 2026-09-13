@@ -12,17 +12,24 @@ class ExpenseController extends Controller
 {
     public function index(Request $request): View
     {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+        ]);
+
         $expenses = Expense::with('user')
-            ->when($request->date_from, fn ($q, $d) => $q->whereDate('expense_date', '>=', $d))
-            ->when($request->date_to, fn ($q, $d) => $q->whereDate('expense_date', '<=', $d))
-            ->when($request->search, fn ($q, $s) => $q->where('title', 'like', "%{$s}%"))
+            ->when($filters['date_from'] ?? null, fn ($q, $d) => $q->whereDate('expense_date', '>=', $d))
+            ->when($filters['date_to'] ?? null, fn ($q, $d) => $q->whereDate('expense_date', '<=', $d))
+            ->when($filters['search'] ?? null, fn ($q, $s) => $q->where('title', 'like', "%{$s}%"))
             ->latest('expense_date')
             ->paginate(15)
             ->withQueryString();
 
         $total = Expense::query()
-            ->when($request->date_from, fn ($q, $d) => $q->whereDate('expense_date', '>=', $d))
-            ->when($request->date_to, fn ($q, $d) => $q->whereDate('expense_date', '<=', $d))
+            ->when($filters['date_from'] ?? null, fn ($q, $d) => $q->whereDate('expense_date', '>=', $d))
+            ->when($filters['date_to'] ?? null, fn ($q, $d) => $q->whereDate('expense_date', '<=', $d))
+            ->when($filters['search'] ?? null, fn ($q, $s) => $q->where('title', 'like', "%{$s}%"))
             ->sum('amount');
 
         return view('expenses.index', compact('expenses', 'total'));
